@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aviary-cpacs-mcp"
+version = "0.1.0"
+description = "An MCP for CPACS-integrated NASA Aviary trajectory-coupled mission optimization"
+authors = [
+  { name = "The Design Research Collective", email = "ask-drc@cmu.edu" }
+]
+maintainers = [
+  { name = "Mayank Dixit", email = "mayankd@andrew.cmu.edu" },
+  { name = "Christopher McComb", email = "ccm@cmu.edu" },
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "anyio>=4.0.0,<5.0.0",
+  "fastmcp~=2.13.1",
+  "pydantic>=2.6.0,<3.0.0",
+  "numpy>=1.26",
+  "aviary==0.9.10",
+  "openmdao==3.36.0",
+  "dymos==1.13.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/cmudrc/aviary-cpacs-mcp"
+Repository = "https://github.com/cmudrc/aviary-cpacs-mcp"
+Issues = "https://github.com/cmudrc/aviary-cpacs-mcp/issues"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+  "mypy>=1.11",
+  "ruff>=0.6.0",
+  "build>=1.2.0",
+  "pre-commit>=3.8.0",
+]
+
+[project.scripts]
+aviary-cpacs-mcp = "aviary_cpacs_mcp.__main__:main"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501", "UP047"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN", "D"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_ignores = true
+warn_unused_configs = true
+strict = true
+ignore_missing_imports = true
+exclude = ["^build/", "^src/aviary_cpacs_mcp/aviary/", "^src/aviary_cpacs_mcp/cpacs_adapter\\.py$"]
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["aviary_cpacs_mcp.aviary.*", "aviary_cpacs_mcp.cpacs_adapter", "aviary_cpacs_mcp.tools.run_mission"]
+follow_imports = "skip"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=aviary_cpacs_mcp --cov-report=term-missing"
+pythonpath = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["aviary_cpacs_mcp*"]
