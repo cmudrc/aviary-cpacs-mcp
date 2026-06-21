@@ -67,3 +67,7 @@ docs/_build/
 
 # PyPI
 .pypirc
+
+# macOS Finder metadata
+.DS_Store
+**/.DS_Store
