@@ -53,9 +53,7 @@ def test_aviary_availability_is_reported_not_assumed() -> None:
 @pytest.mark.parametrize("module_name", EXPECTED_TOOL_MODULES)
 def test_tool_module_imports(module_name: str) -> None:
     """Each tool module imports, so a broken tool surfaces here rather than at runtime."""
-    module = __import__(
-        f"aviary_cpacs_mcp.tools.{module_name}", fromlist=[module_name]
-    )
+    module = __import__(f"aviary_cpacs_mcp.tools.{module_name}", fromlist=[module_name])
     assert module is not None
 
 
