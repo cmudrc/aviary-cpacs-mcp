@@ -67,3 +67,9 @@ pytest
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Maintainers
+
+Mayank Dixit ([@Kugel-Blitz-13](https://github.com/Kugel-Blitz-13)), Carnegie
+Mellon University — mayankd@cmu.edu
+Christopher McComb, Carnegie Mellon University — Design Research Collective
