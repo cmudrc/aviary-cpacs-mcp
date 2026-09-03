@@ -26,11 +26,7 @@ def read_from_cpacs(
     # No default. 122.4 m2 is the D150's wing area; defaulting to it meant any
     # file without a reference area was flown as if it were a D150.
     ref_area_el = root.find(".//vehicles/aircraft/model/reference/area")
-    ref_area = (
-        float(ref_area_el.text)
-        if ref_area_el is not None and ref_area_el.text
-        else None
-    )
+    ref_area = float(ref_area_el.text) if ref_area_el is not None and ref_area_el.text else None
 
     wing = root.find(".//vehicles/aircraft/model/wings/wing")
     wing_area = ref_area
@@ -171,10 +167,8 @@ def _run_with_aviary(inputs: dict[str, Any]) -> dict[str, Any]:
     missing = [
         name
         for name, key in (
-            ("reference area (//vehicles/aircraft/model/reference/area)",
-             "wing_area_m2"),
-            ("payload (num_passengers in the mission profile)",
-             "num_passengers"),
+            ("reference area (//vehicles/aircraft/model/reference/area)", "wing_area_m2"),
+            ("payload (num_passengers in the mission profile)", "num_passengers"),
         )
         if inputs.get(key) is None
     ]
@@ -184,9 +178,7 @@ def _run_with_aviary(inputs: dict[str, Any]) -> dict[str, Any]:
             "solver": "aviary",
             "error": {
                 "type": "missing_input",
-                "message": (
-                    "Cannot fly a mission: " + ", ".join(missing) + " not available."
-                ),
+                "message": ("Cannot fly a mission: " + ", ".join(missing) + " not available."),
                 "details": (
                     "These describe the aircraft and its payload. They are not "
                     "defaulted, because a substituted value is written into "
