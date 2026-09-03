@@ -23,8 +23,14 @@ def read_from_cpacs(
     """Extract aircraft geometry + flight conditions from CPACS for Aviary."""
     root = ET.fromstring(cpacs_xml)
 
+    # No default. 122.4 m2 is the D150's wing area; defaulting to it meant any
+    # file without a reference area was flown as if it were a D150.
     ref_area_el = root.find(".//vehicles/aircraft/model/reference/area")
-    ref_area = float(ref_area_el.text) if ref_area_el is not None and ref_area_el.text else 122.4
+    ref_area = (
+        float(ref_area_el.text)
+        if ref_area_el is not None and ref_area_el.text
+        else None
+    )
 
     wing = root.find(".//vehicles/aircraft/model/wings/wing")
     wing_area = ref_area
@@ -58,7 +64,10 @@ def read_from_cpacs(
         "taper_ratio": taper_ratio,
         "fuselage_length_m": fus_length,
         "range_nmi": mp.get("range_nmi", mp.get("range_m", 3_000_000.0) / 1852.0),
-        "num_passengers": mp.get("num_passengers", 162),
+        # Payload. Not defaulted -- 162 passengers is roughly nine tonnes of
+        # people and bags, which is not a detail to assume on the caller's
+        # behalf and then report as a mission result.
+        "num_passengers": mp.get("num_passengers"),
         "cruise_mach": mp.get("cruise_mach", 0.78),
         "cruise_altitude_ft": mp.get(
             "cruise_altitude_ft",
@@ -159,12 +168,39 @@ def _run_with_aviary(inputs: dict[str, Any]) -> dict[str, Any]:
         run_aviary,
     )
 
+    missing = [
+        name
+        for name, key in (
+            ("reference area (//vehicles/aircraft/model/reference/area)",
+             "wing_area_m2"),
+            ("payload (num_passengers in the mission profile)",
+             "num_passengers"),
+        )
+        if inputs.get(key) is None
+    ]
+    if missing:
+        return {
+            "success": False,
+            "solver": "aviary",
+            "error": {
+                "type": "missing_input",
+                "message": (
+                    "Cannot fly a mission: " + ", ".join(missing) + " not available."
+                ),
+                "details": (
+                    "These describe the aircraft and its payload. They are not "
+                    "defaulted, because a substituted value is written into "
+                    "the shared CPACS and read downstream as a real result."
+                ),
+            },
+        }
+
     aircraft_params = _build_aviary_params(inputs)
     mission_config = {
-        "range_nmi": inputs.get("range_nmi", 1500),
-        "num_passengers": inputs.get("num_passengers", 162),
-        "cruise_mach": inputs.get("cruise_mach", 0.785),
-        "cruise_altitude_ft": inputs.get("cruise_altitude_ft", 35000),
+        "range_nmi": inputs["range_nmi"],
+        "num_passengers": inputs["num_passengers"],
+        "cruise_mach": inputs["cruise_mach"],
+        "cruise_altitude_ft": inputs["cruise_altitude_ft"],
         "optimizer_max_iter": 200,
     }
 

@@ -43,12 +43,23 @@ def configure_mission(payload: dict[str, Any]) -> dict[str, Any]:
 
     session.mission_config = mc
 
+    # Payload follows from the passenger count, so it only exists once someone
+    # has said how many people are aboard. This used to assume 162, which
+    # reported a ~14.7 t payload the caller never asked for as though it were
+    # a property of the mission.
     passenger_mass_kg = 90.7
-    payload_kg = round(mc.get("num_passengers", 162) * passenger_mass_kg, 1)
-
-    return {
+    result: dict[str, Any] = {
         "success": True,
         "session_id": session_id,
         "mission_config": mc,
-        "payload_kg": payload_kg,
     }
+    num_p = mc.get("num_passengers")
+    if num_p is None:
+        result["payload_kg"] = None
+        result["payload_note"] = (
+            "Not computed: num_passengers has not been set for this mission. "
+            "Call configure_mission with num_passengers to get a payload."
+        )
+    else:
+        result["payload_kg"] = round(num_p * passenger_mass_kg, 1)
+    return result
