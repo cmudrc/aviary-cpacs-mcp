@@ -53,13 +53,13 @@ def configure_mission(payload: dict[str, Any]) -> dict[str, Any]:
         "session_id": session_id,
         "mission_config": mc,
     }
-    num_p = mc.get("num_passengers")
-    if num_p is None:
+    configured_passengers = mc.get("num_passengers")
+    if configured_passengers is None:
         result["payload_kg"] = None
         result["payload_note"] = (
             "Not computed: num_passengers has not been set for this mission. "
             "Call configure_mission with num_passengers to get a payload."
         )
     else:
-        result["payload_kg"] = round(num_p * passenger_mass_kg, 1)
+        result["payload_kg"] = round(configured_passengers * passenger_mass_kg, 1)
     return result
