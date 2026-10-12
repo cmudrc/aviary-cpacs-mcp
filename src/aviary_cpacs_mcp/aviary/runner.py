@@ -112,6 +112,23 @@ def create_aviary_problem(
         except Exception as exc:
             logger.warning("Could not set %s on aviary_inputs: %s", pname, exc)
 
+    # Passengers. Until 2026-10-12 the count in mission_config was never set on
+    # the model, so a required input had no effect: 150 and 250 passengers
+    # gave the same take-off mass (found by Kiro in a study dry run). Aviary's
+    # preprocessor insists that NUM_PASSENGERS equal the sum of the class
+    # counts, so the whole count goes to tourist class, replacing the base
+    # model's 11 first-class seats, at both the actual and the design level.
+    num_pax = mc.get("num_passengers")
+    if num_pax is not None:
+        n = int(num_pax)
+        if n <= 0:
+            raise ValueError(f"num_passengers must be a positive integer, got {num_pax!r}")
+        cp = av.Aircraft.CrewPayload
+        for var in (cp.NUM_PASSENGERS, cp.NUM_TOURIST_CLASS, cp.Design.NUM_PASSENGERS, cp.Design.NUM_TOURIST_CLASS):
+            prob.aviary_inputs.set_val(var, n, units="unitless")
+        for var in (cp.NUM_FIRST_CLASS, cp.NUM_BUSINESS_CLASS, cp.Design.NUM_FIRST_CLASS, cp.Design.NUM_BUSINESS_CLASS):
+            prob.aviary_inputs.set_val(var, 0, units="unitless")
+
     cruise_mach = mc.get("cruise_mach", 0.785)
     cruise_alt = mc.get("cruise_altitude_ft", 35000)
     range_nmi = mc.get("range_nmi", 1500)

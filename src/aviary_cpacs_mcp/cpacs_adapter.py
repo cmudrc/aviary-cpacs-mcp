@@ -309,6 +309,19 @@ def _run_with_aviary(inputs: dict[str, Any]) -> dict[str, Any]:
             "runtime_seconds": run_result["runtime_seconds"],
             "iterations": run_result["iterations"],
             "timed_out": run_result.get("timed_out", False),
+            # What was actually flown (2026-10-12): Aviary's benchmark aircraft
+            # with these values replaced from the CPACS file and the caller.
+            # Everything not listed (engine deck, mass scalers, crew, cargo,
+            # per-passenger masses) is the benchmark's, not the file's.
+            "base_model": "Aviary benchmark aircraft_for_bench_FwFm (FLOPS mass and aero models)",
+            "from_cpacs": ", ".join(sorted(aircraft_params)) or "nothing",
+            "from_caller": (
+                f"range_nmi={mission_config['range_nmi']}, "
+                f"num_passengers={mission_config['num_passengers']} (all tourist class), "
+                f"cruise_mach={mission_config['cruise_mach']}, "
+                f"cruise_altitude_ft={mission_config['cruise_altitude_ft']}"
+            ),
+            "num_passengers": int(mission_config["num_passengers"]),
         }
     )
 
