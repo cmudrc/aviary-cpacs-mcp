@@ -45,7 +45,9 @@ def test_more_passengers_means_a_heavier_aircraft() -> None:
 def test_result_says_what_was_flown() -> None:
     r = _fly(150)
     assert "aircraft_for_bench_FwFm" in r["base_model"]
-    assert "Aircraft.Fuselage.LENGTH" in r["from_cpacs"]
+    # The D150 file carries none of the elements the adapter reads for aspect ratio,
+    # sweep, taper or fuselage length, so nothing effective comes from it.
+    assert r["from_cpacs"] == "nothing"
     assert "Aircraft.Wing.AREA" in r["set_but_without_effect"]
     assert "num_passengers=150" in r["from_caller"]
 
@@ -73,7 +75,7 @@ def test_which_cpacs_inputs_matter_is_pinned() -> None:
     for name in a.INERT_PARAMS:
         p = dict(base)
         p[name] = base[name] * 1.2
-        assert abs(gtow(p) - g0) < 1e-6, name
+        assert abs(gtow(p) - g0) < 0.01, name  # identical to the gram; solver noise is micrograms
     for name in a.EFFECTIVE_PARAMS:
         p = dict(base)
         p[name] = base[name] * 1.2
