@@ -76,6 +76,14 @@ def read_from_cpacs(
     }
 
 
+#: Which CPACS-derived inputs change the Aviary result in this configuration
+#: (measured 2026-10-12, +20 percent each, alone; pinned by
+#: tests/test_passengers_reach_the_model.py). The others are set on the model
+#: but the benchmark's methods do not read them, so the result says so.
+EFFECTIVE_PARAMS = frozenset({"Aircraft.Wing.ASPECT_RATIO", "Aircraft.Wing.SWEEP", "Aircraft.Fuselage.LENGTH"})
+INERT_PARAMS = frozenset({"Aircraft.Wing.AREA", "Aircraft.Wing.TAPER_RATIO"})
+
+
 def _build_aviary_params(inputs: dict[str, Any]) -> dict[str, Any]:
     """Map CPACS geometry to Aviary parameter names."""
     params: dict[str, Any] = {}
@@ -314,7 +322,15 @@ def _run_with_aviary(inputs: dict[str, Any]) -> dict[str, Any]:
             # Everything not listed (engine deck, mass scalers, crew, cargo,
             # per-passenger masses) is the benchmark's, not the file's.
             "base_model": "Aviary benchmark aircraft_for_bench_FwFm (FLOPS mass and aero models)",
-            "from_cpacs": ", ".join(sorted(aircraft_params)) or "nothing",
+            "from_cpacs": ", ".join(sorted(k for k in aircraft_params if k in EFFECTIVE_PARAMS)) or "nothing",
+            "set_but_without_effect": ", ".join(sorted(k for k in aircraft_params if k in INERT_PARAMS)) or "nothing",
+            "parameter_note": (
+                "Measured 2026-10-12 on this configuration: a 20 percent change in "
+                "aspect ratio, sweep or fuselage length changes the take-off mass; "
+                "the same change in wing area or taper ratio changes nothing. The "
+                "inert values are written to the model but the benchmark's aero and "
+                "mass methods do not read them."
+            ),
             "from_caller": (
                 f"range_nmi={mission_config['range_nmi']}, "
                 f"num_passengers={mission_config['num_passengers']} (all tourist class), "

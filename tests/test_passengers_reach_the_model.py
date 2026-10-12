@@ -45,5 +45,36 @@ def test_more_passengers_means_a_heavier_aircraft() -> None:
 def test_result_says_what_was_flown() -> None:
     r = _fly(150)
     assert "aircraft_for_bench_FwFm" in r["base_model"]
-    assert "Aircraft.Wing.AREA" in r["from_cpacs"]
+    assert "Aircraft.Fuselage.LENGTH" in r["from_cpacs"]
+    assert "Aircraft.Wing.AREA" in r["set_but_without_effect"]
     assert "num_passengers=150" in r["from_caller"]
+
+
+def test_which_cpacs_inputs_matter_is_pinned() -> None:
+    """If a future Aviary setup starts reading the wing area, this fails and the
+    EFFECTIVE/INERT lists in the adapter must be re-measured."""
+    from aviary_cpacs_mcp.aviary import runner as rr
+
+    base = {
+        "Aircraft.Wing.AREA": 122.4,
+        "Aircraft.Wing.ASPECT_RATIO": 9.4,
+        "Aircraft.Wing.SWEEP": 25.0,
+        "Aircraft.Wing.TAPER_RATIO": 0.25,
+        "Aircraft.Fuselage.LENGTH": 37.6,
+    }
+    mc = {"range_nmi": 1500, "num_passengers": 150, "cruise_mach": 0.78, "cruise_altitude_ft": 35000}
+
+    def gtow(params: dict) -> float:
+        prob = rr.create_aviary_problem(aircraft_params=params, mission_config=mc)
+        res = rr.run_aviary(prob, timeout_seconds=300)
+        return rr.extract_results(prob, res["converged"])["gtow_kg"]
+
+    g0 = gtow(base)
+    for name in a.INERT_PARAMS:
+        p = dict(base)
+        p[name] = base[name] * 1.2
+        assert abs(gtow(p) - g0) < 1e-6, name
+    for name in a.EFFECTIVE_PARAMS:
+        p = dict(base)
+        p[name] = base[name] * 1.2
+        assert abs(gtow(p) - g0) > 10.0, name
