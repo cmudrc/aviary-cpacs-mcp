@@ -28,6 +28,8 @@ def _fly(pax: int) -> dict:
             "num_passengers": pax,
             "cruise_mach": 0.78,
             "cruise_altitude_ft": 35000.0,
+            # The D150 gives Aviary nothing it uses; the benchmark must be accepted.
+            "allow_benchmark_aircraft": True,
         },
     )
     assert r.get("success"), r.get("error")

@@ -104,8 +104,19 @@ def _register_tools(server: FastMCP) -> None:
     def run_mission_tool(
         session_id: str,
         timeout_seconds: int = 300,
+        allow_benchmark_aircraft: bool = False,
     ) -> dict[str, Any]:
-        return tools.run_mission({"session_id": session_id, "timeout_seconds": timeout_seconds})
+        """Refuses (benchmark_aircraft_only) when none of the inputs Aviary uses
+        here (wing aspect ratio, sweep, fuselage length) was set, because the
+        run would be Aviary's benchmark aircraft; allow_benchmark_aircraft=True
+        runs it anyway, labelled."""
+        return tools.run_mission(
+            {
+                "session_id": session_id,
+                "timeout_seconds": timeout_seconds,
+                "allow_benchmark_aircraft": allow_benchmark_aircraft,
+            }
+        )
 
     @server.tool(
         name="get_results",

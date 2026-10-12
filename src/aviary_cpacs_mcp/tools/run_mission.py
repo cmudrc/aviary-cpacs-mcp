@@ -10,7 +10,7 @@ from ..session_manager import session_manager
 logger = logging.getLogger(__name__)
 
 
-def _run_aviary(session: Any, timeout_seconds: int = 300) -> dict[str, Any]:
+def _run_aviary(session: Any, timeout_seconds: int = 300, allow_benchmark_aircraft: bool = False) -> dict[str, Any]:
     """Run the mission using NASA Aviary trajectory optimisation."""
     from ..aviary.runner import (
         create_aviary_problem,
@@ -18,9 +18,13 @@ def _run_aviary(session: Any, timeout_seconds: int = 300) -> dict[str, Any]:
         extract_trajectory,
         run_aviary,
     )
+    from ..cpacs_adapter import benchmark_refusal
 
     mc = dict(session.mission_config)
     ap = dict(session.aircraft_params)
+    refusal = benchmark_refusal(ap)
+    if refusal is not None and not allow_benchmark_aircraft:
+        return refusal
 
     logger.info("Creating Aviary problem...")
     try:
@@ -79,6 +83,10 @@ def run_mission(payload: dict[str, Any]) -> dict[str, Any]:
 
     session = session_manager.get(str(session_id))
     timeout = int(payload.get("timeout_seconds", 300))
-    summary = _run_aviary(session, timeout_seconds=timeout)
+    summary = _run_aviary(
+        session,
+        timeout_seconds=timeout,
+        allow_benchmark_aircraft=bool(payload.get("allow_benchmark_aircraft", False)),
+    )
     session.results = summary
     return summary

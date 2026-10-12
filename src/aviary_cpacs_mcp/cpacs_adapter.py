@@ -68,6 +68,9 @@ def read_from_cpacs(
         # people and bags, which is not a detail to assume on the caller's
         # behalf and then report as a mission result.
         "num_passengers": mp.get("num_passengers"),
+        # Refuse-by-default switch (2026-10-12): fly Aviary's benchmark
+        # aircraft even when the file gives Aviary nothing it uses.
+        "allow_benchmark_aircraft": bool(mp.get("allow_benchmark_aircraft", False)),
         "cruise_mach": mp.get("cruise_mach", 0.78),
         "cruise_altitude_ft": mp.get(
             "cruise_altitude_ft",
@@ -82,6 +85,38 @@ def read_from_cpacs(
 #: but the benchmark's methods do not read them, so the result says so.
 EFFECTIVE_PARAMS = frozenset({"Aircraft.Wing.ASPECT_RATIO", "Aircraft.Wing.SWEEP", "Aircraft.Fuselage.LENGTH"})
 INERT_PARAMS = frozenset({"Aircraft.Wing.AREA", "Aircraft.Wing.TAPER_RATIO"})
+
+
+def benchmark_refusal(aircraft_params: dict[str, Any]) -> dict[str, Any] | None:
+    """The refusal returned when a run would fly Aviary's benchmark aircraft.
+
+    None when at least one input Aviary actually uses (EFFECTIVE_PARAMS) is
+    present; otherwise a structured error. Callers skip it when the caller
+    explicitly accepted the benchmark aircraft (allow_benchmark_aircraft).
+    Decided 2026-10-12 ("refuse by default"): until then the tool returned
+    benchmark-aircraft missions as if they were the file's aircraft.
+    """
+    if any(k in EFFECTIVE_PARAMS for k in aircraft_params):
+        return None
+    inert = sorted(k for k in aircraft_params if k in INERT_PARAMS)
+    return {
+        "success": False,
+        "solver": "aviary",
+        "error": {
+            "type": "benchmark_aircraft_only",
+            "message": (
+                "Aviary would fly its benchmark aircraft (aircraft_for_bench_FwFm), "
+                "not the aircraft in this file: none of the inputs Aviary uses in "
+                "this configuration (wing aspect ratio, sweep, fuselage length) "
+                "was provided"
+                + (f"; {', '.join(inert)} set but without effect" if inert else "")
+                + ". Nothing was run. Pass allow_benchmark_aircraft=true to fly "
+                "the benchmark aircraft at the requested range, passengers and "
+                "cruise point; the result is then labelled as the benchmark's."
+            ),
+            "effective_inputs": sorted(EFFECTIVE_PARAMS),
+        },
+    }
 
 
 def _build_aviary_params(inputs: dict[str, Any]) -> dict[str, Any]:
@@ -285,6 +320,9 @@ def _run_with_aviary(inputs: dict[str, Any]) -> dict[str, Any]:
         }
 
     aircraft_params = _build_aviary_params(inputs)
+    refusal = benchmark_refusal(aircraft_params)
+    if refusal is not None and not inputs.get("allow_benchmark_aircraft"):
+        return refusal
     mission_config = {
         "range_nmi": inputs["range_nmi"],
         "num_passengers": inputs["num_passengers"],
